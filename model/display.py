@@ -4,7 +4,8 @@
 
 from datetime import datetime, timedelta
 
-import model.history as history
+import model.settings as settings
+import parsers.history as history
 
 
 class EU4Map(object):
@@ -23,30 +24,56 @@ class EU4Map(object):
         self.countries = countries
         self.mapObject = mapObject
 
+        self.countryHistories = {}
         self.provinceHistories = {}
         self.datesWithEvents = {}
 
         # build original owners and controllers, so they can be restored
-        self.provinceRestoreData = {
+        self.dateCache = {}
+
+        self.dateCache[settings.start_date] = {
                 p.id: (p.controller, p.owner) for p in self.provinces.values()
-                }
+            }
 
         self.reset()
 
-    def loadSave(self, provinceHistories, datesWithEvents):
+    def loadSave(self, provinceHistories, countryHistories, datesWithEvents):
+        self.countryHistories = countryHistories
         self.provinceHistories = provinceHistories
         self.datesWithEvents = datesWithEvents
+
+        # clear everything in the cache except the start date
+        self.dateCache = {
+                settings.start_date: self.dateCache[settings.start_date]
+            }
+
         self.reset()
+
+    def updateProvincesForDate(self, date):
+        assert date in self.dateCache
+
+        dirty = set()
+
+        for pID,(controller,owner) in self.dateCache[date].iteritems():
+            province = self.provinces[pID]
+
+            if province.controller == controller \
+                    and province.owner == owner:
+                continue
+
+            province.controller = controller
+            province.owner = owner
+
+            dirty.add(pID)
+
+        return dirty
 
     def reset(self):
         # reset the date
-        self.date = history.START_DATE
+        self.date = settings.start_date
 
         # reset province owners
-        for pID,(controller,owner) in self.provinceRestoreData.iteritems():
-            province = self.provinces[pID]
-            province.controller = controller
-            province.owner = owner
+        self.updateProvincesForDate(settings.start_date)
 
         # clear the map (everything black)
         self.img[:] = 0
@@ -81,7 +108,7 @@ class EU4Map(object):
         else:
             col = EU4Map.UNCOLONISED_COLOUR
 
-        assert province.maskIdxs, '%s has no mask'%province
+        assert province.maskIdxs is not None, '%s has no mask'%province
         self.img[province.maskIdxs] = col
 
     def redraw(self, dirty=None):
@@ -107,31 +134,92 @@ class EU4Map(object):
         elif delta == EU4Map.DELTA_DECADE:
             targetDate = datetime(y + 10, m, d)
 
-        dayDelta = timedelta(days=1)
-        dirty = set()
+        self.renderAtDate(targetDate)
 
-        while self.date < targetDate:
-            self.date += dayDelta
+    def renderAtDate(self, targetDate):
+        # first, find the first date we have cached before the target date
+        dayDelta = timedelta(days=1)
+        date = targetDate
+
+        # before doing this, check that such a date exists
+        earliest = min(self.dateCache)
+        
+        if date <= earliest:
+            date = earliest
+        else:
+            while date not in self.dateCache:
+                date -= dayDelta
+
+        # now, set all provinces back to the target date
+        dirty = self.updateProvincesForDate(date)
+
+        # finally, work out what provinces will need to be redrawn in order
+        # to reflect the state of the world at the target date
+        while date < targetDate:
+            date += dayDelta
 
             # update our set of dirty provinces
-            if self.date not in self.datesWithEvents:
+            if date not in self.datesWithEvents:
                 continue
             
-            pIDs = self.datesWithEvents[self.date]
-            dirty = dirty.union(pIDs)
+            # either the province has changed hands
+            if history.PROVINCES in self.datesWithEvents[date]:
+                # grab the dirty pIDs
+                pIDs = self.datesWithEvents[date][history.PROVINCES]
+                dirty = dirty.union(pIDs)
 
-            # update the actual province objects
-            for pID in pIDs:
-                assert pID in self.provinces
-                assert pID in self.provinceHistories
+                # update the actual province objects
+                for pID in pIDs:
+                    assert pID in self.provinces
+                    assert pID in self.provinceHistories
+                    assert date in self.provinceHistories[pID]
 
-                province = self.provinces[pID]
-                event = self.provinceHistories[pID][self.date]
+                    province = self.provinces[pID]
+                    event = self.provinceHistories[pID][date]
 
-                if history.CONTROLLER in event:
-                    province.controller = event[history.CONTROLLER]
+                    if history.CONTROLLER in event:
+                        province.controller = event[history.CONTROLLER]
 
-                if history.OWNER in event:
-                    province.owner = event[history.OWNER]
+                    if history.OWNER in event:
+                        province.owner = event[history.OWNER]
+
+            # or something has happened to the country
+            if history.COUNTRIES in self.datesWithEvents[date]:
+                # grab the concerned tags
+                tags = self.datesWithEvents[date][history.COUNTRIES]
+
+                # process the events
+                for tag in tags:
+                    assert tag in self.countries
+                    assert tag in self.countryHistories
+
+                    country = self.countries[tag]
+                    event = self.countryHistories[tag][date]
+
+                    # if we have a tag change, we must set the owner (and only
+                    # the owner) of all provinces owned by the old tag to the
+                    # new tag
+                    if event[history.EVENT_TYPE] == history.EVENT_TAG_CHANGE:
+                        oldTag = event[history.SOURCE_TAG]
+
+                        pIDs = [pID for pID,p in self.provinces.iteritems()
+                                if p.owner == oldTag]
+
+                        for pID in pIDs:
+                            province = self.provinces[pID]
+                            province.owner = tag
+
+                        # update the dirty provinces
+                        dirty = dirty.union(pIDs)
+
+            # update the date cache so we can quickly get back to this date
+            self.dateCache[date] = {
+                    p.id: (p.controller, p.owner) 
+                        for p in self.provinces.values()
+                }
         
+        # redraw only changed provinces
         self.redraw(dirty)
+        
+        # set date
+        self.date = date

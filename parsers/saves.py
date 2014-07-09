@@ -102,7 +102,8 @@ def parse_object_dict(stream):
         # there are sometimes empty objects chilling here
         if tpe == '{':
             obj = parse_object(read_object(stream))
-            assert len(obj) == 0
+            # ignore this object
+            # warning: here be dragons
             continue
 
         assert tpe == '='
@@ -217,7 +218,7 @@ def read_token(stream, endTokenMarkers, readSize=8):
 
 
 def parse_token(token):
-    # remvoe newlines, tabs etc
+    # remove newlines, tabs etc
     token = token.strip()
 
     # String: "<string>"

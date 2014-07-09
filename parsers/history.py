@@ -3,17 +3,29 @@
 
 from datetime import datetime
 
+import model.settings as settings
+
+
+PROVINCES = 'PROVINCES'
+COUNTRIES = 'COUNTRIES'
 
 CONTROLLER = 'controller'
 OWNER = 'owner'
-START_DATE = datetime(1444, 11, 11)
+
+EVENT_TYPE = 'EVENT_TYPE'
+EVENT_TAG_CHANGE = 'EVENT_TAG_CHANGE'
+SOURCE_TAG = 'SOURCE_TAG'
 
 
 def build_history(save, provinces):
     # first, build up histories for all of the provinces
     provinceHistories = {}
 
-    for nID,d in save.iteritems():
+    # the most important part of the histories is the changes recorded in the
+    # province histories section of the save file
+    assert 'provinces' in save
+
+    for nID,d in save['provinces'].iteritems():
         pID = -nID
 
         events = provinceHistories[pID] = {}
@@ -22,7 +34,7 @@ def build_history(save, provinces):
         p = provinces[pID]
 
         # add owner as of start date
-        events[START_DATE] = {CONTROLLER: p.controller, OWNER: p.owner}
+        events[settings.start_date] = {CONTROLLER: p.controller, OWNER: p.owner}
 
         if 'history' not in d:
             continue
@@ -42,17 +54,55 @@ def build_history(save, provinces):
             if out:
                 events[date] = out
 
+    # we also need to check for tag change events, as these aren't necessarily
+    # reflected in the province histories
+    countryHistories = {}
+
+    assert 'countries' in save
+    
+    for tag,d in save['countries'].iteritems():
+        if 'history' not in d:
+            continue
+
+        if tag not in countryHistories:
+            events = countryHistories[tag] = {}
+
+        # NB: currently assume there is only one event per day
+        for date,evt in d['history'].iteritems():
+            if not isinstance(date, datetime):
+                continue
+
+            if 'changed_tag_from' in evt:
+                events[date] = {
+                        EVENT_TYPE: EVENT_TAG_CHANGE,
+                        SOURCE_TAG: evt['changed_tag_from']
+                    }
+
     # now, build up a dict of all the provinces which had events on a given
     # day, to save searching later
     provinceDates = {
             pID: set(evts) for pID,evts in provinceHistories.iteritems()
-            }
+        }
 
-    dates = reduce(set.union, provinceDates.values())
+    datesWithProvinceEvents = reduce(set.union, provinceDates.values())
+
+    countryDates = {
+            tag: set(evts) for tag,evts in countryHistories.iteritems()
+        }
+
+    datesWithCountryEvents = reduce(set.union, countryDates.values())
+
+    dates = datesWithProvinceEvents.union(datesWithCountryEvents)
 
     datesWithEvents = {
-            date: [pID for pID,eventDates in provinceDates.iteritems()
-                    if date in eventDates] for date in dates
+            date: {
+                    PROVINCES: [pID for pID,eventDates 
+                                in provinceDates.iteritems()
+                                if date in eventDates],
+                    COUNTRIES: [tag for tag,eventDates
+                                in countryDates.iteritems()
+                                if date in eventDates],
+                } for date in dates
             }
 
-    return provinceHistories, datesWithEvents
+    return provinceHistories, countryHistories, datesWithEvents

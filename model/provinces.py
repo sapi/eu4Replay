@@ -36,7 +36,8 @@ class Province(object):
         instance = cls(id, name=name, rgb=rgb)
 
         assert 'maskIdxs' in d
-        instance.maskIdxs = np.array(d['maskIdxs'])
+        f = lambda arr: np.array(arr, np.integer)
+        instance.maskIdxs = tuple(map(f, d['maskIdxs']))
 
         return instance
 

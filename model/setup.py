@@ -3,14 +3,14 @@
 
 import os
 from scipy.ndimage import imread
+from StringIO import StringIO
 import sys
 
 from parsers.countries import parse_countries
 from parsers.provinces \
         import parse_province_definitions, parse_province_regions, \
                parse_province_original_owners
-
-from saves import parse_object
+from parsers.saves import parse_object
 
 
 def flushed_write(s):
@@ -50,7 +50,7 @@ def setup_data(eu4Dir):
     flushed_write('Loading map metadata...')
 
     with open(mapMetadataFilename, 'rU') as f:
-        mapObject = parse_object(f)
+        mapObject = parse_object(StringIO(f.read()))
 
     flushed_write('done!\n')
 
@@ -60,3 +60,33 @@ def setup_data(eu4Dir):
     flushed_write('done!\n')
 
     return countries, provinces, img, mapObject
+
+
+def setup_map(eu4Dir):
+    mapDir = os.path.join(eu4Dir, 'map')
+    mapFilename = os.path.join(mapDir, 'provinces.bmp')
+    mapMetadataFilename = os.path.join(mapDir, 'default.map')
+
+    img = imread(mapFilename)
+
+    with open(mapMetadataFilename, 'rU') as f:
+        mapObject = parse_object(StringIO(f.read()))
+
+    return img, mapObject
+
+
+def setup_countries(eu4Dir):
+    countries = parse_countries(eu4Dir)
+    return countries
+
+
+def setup_provinces(eu4Dir):
+    mapDir = os.path.join(eu4Dir, 'map')
+    provinceDefintionsFilename = os.path.join(mapDir, 'definition.csv')
+    mapFilename = os.path.join(mapDir, 'provinces.bmp')
+
+    provinces = parse_province_definitions(provinceDefintionsFilename)
+    img = imread(mapFilename)
+    parse_province_regions(img, provinces)
+
+    return provinces
