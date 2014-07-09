@@ -3,6 +3,7 @@ from StringIO import StringIO
 import unittest
 
 from parsers.saves import read_object, parse_object
+from parsers.saves import read_token
 
 
 def suite():
@@ -11,6 +12,7 @@ def suite():
     return unittest.TestSuite([
         loader.loadTestsFromTestCase(ReadObjectTests),
         loader.loadTestsFromTestCase(ParseObjectTests),
+        loader.loadTestsFromTestCase(ReadTokenTests),
         ])
 
 
@@ -479,3 +481,77 @@ class ParseObjectTests(unittest.TestCase):
             '''
 
         self.checkIsInvalid(s)
+
+
+class ReadTokenTests(unittest.TestCase):
+    def setUp(self):
+        self.EOFMarkers = {
+                '': False,
+                }
+
+        self.equalsAndEOFMarkersWithNoRewind = {
+                '': False,
+                '=': False,
+                }
+
+        self.equalsAndEOFMarkersWithRewind = {
+                '': False,
+                '=': True,
+                }
+
+    def check(self, s, endTokenMarkers, expected):
+        stream = StringIO(s)
+
+        result = read_token(stream, endTokenMarkers)
+        self.assertEqual(result, expected)
+
+    def checkMultiple(self, s, endTokenMarkers, expected):
+        stream = StringIO(s)
+
+        for etm,exp in zip(endTokenMarkers, expected):
+            result = read_token(stream, etm)
+            self.assertEqual(result, exp)
+
+    def testEOFAtStartOfStream(self):
+        s = ''
+        endTokenMarkers = self.EOFMarkers
+        expected = ('', '')
+
+        self.check(s, endTokenMarkers, expected)
+
+    def testReadToEOF(self):
+        s = 'test'
+        endTokenMarkers = self.EOFMarkers
+        expected = ('test', '')
+
+        self.check(s, endTokenMarkers, expected)
+
+    def testReadToMarker(self):
+        s = 'test=val'
+        endTokenMarkers = self.equalsAndEOFMarkersWithNoRewind
+        expected = ('test', '=')
+
+        self.check(s, endTokenMarkers, expected)
+
+    def testReadToMarkerThenToEOF(self):
+        s = 'test=val'
+        endTokenMarkers = [self.equalsAndEOFMarkersWithNoRewind]*2
+        expected = [
+                ('test', '='),
+                ('val', ''),
+                ]
+
+        stream = self.checkMultiple(s, endTokenMarkers, expected)
+
+    def testRewindAfterReadingMarker(self):
+        s = 'test=val'
+        endTokenMarkers = [
+                self.equalsAndEOFMarkersWithRewind,
+                self.EOFMarkers,
+                ]
+        expected = [
+                ('test', '='),
+                ('=val', ''),
+                ]
+
+        stream = self.checkMultiple(s, endTokenMarkers, expected)
