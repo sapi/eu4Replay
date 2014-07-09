@@ -75,18 +75,30 @@ def parse_object_array(stream):
     if not data.strip():
         return None
 
+    # if there is anything which looks like a key-value pair here, we don't
+    # want to parse the array
+    if '=' in data:
+        return None
+
     # we seem to have two types of arrays:
     #  (1) newline-delimited arrays of strings
     #  (2) whitespace-delimited arrays of tokens
 
     # first, check if this is an array of strings
+    # make sure to remove any empty lines so that the all() isn't confused
     strings = map(str.strip, data.splitlines())
+    strings = filter(None, strings)
 
     if all(s.startswith('"') and s.endswith('"') for s in strings):
         return map(parse_token, strings)
 
-    return map(parse_token, filter(None, data.split()))
+    # build an array from all tokens, separated by whitespace, which are not
+    # themselves only whitespace
+    tokens = map(str.strip, data.split())
+    tokens = filter(None, tokens)
+    arr = map(parse_token, tokens)
 
+    return arr
 
 def parse_object_dict(stream):
     d = {}
