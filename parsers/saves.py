@@ -17,8 +17,9 @@ def read_object(stream):
     _, tpe = read_token(stream, {'{': False, '': False})
 
     # empty tpe is EOF
+    # EOF indicates a failure to read an object, so we should return None
     if not tpe:
-        return output
+        return None
 
     # we don't want any leading spaces
     c = stream.read(1)
@@ -37,8 +38,9 @@ def read_object(stream):
 
         output.write(token)
 
+        # if we hit EOF, we failed to read the object, and should return None
         if not tpe:
-            break
+            return None
 
         indent += 1 if tpe == '{' else -1
 
@@ -102,7 +104,8 @@ def parse_object_dict(stream):
 
         # there are sometimes empty objects chilling here
         if tpe == '{':
-            obj = parse_object(read_object(stream))
+            substream = read_object(stream)
+            obj = parse_object(substream) if substream is not None else None
             # ignore this object
             # warning: here be dragons
             continue
@@ -119,7 +122,8 @@ def parse_object_dict(stream):
             return None
 
         if tpe == '{':
-            obj = parse_object(read_object(stream))
+            substream = read_object(stream)
+            obj = parse_object(substream) if substream is not None else None
 
             # if we already have a key for this value, then we have a number
             # of options:
@@ -284,7 +288,10 @@ def parse_save(fn, topLevelKeys=None):
 
             for k in topLevelKeys:
                 if line.startswith(k):
-                    d[k] = parse_object(read_object(f))
+                    stream = read_object(f)
+                    assert stream is not None
+
+                    d[k] = parse_object(stream)
 
                     if len(d) == len(topLevelKeys):
                         break
