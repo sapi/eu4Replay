@@ -279,7 +279,7 @@ def parse_save(fn, topLevelKeys=None):
     with open(fn, 'rU') as f:
         if topLevelKeys is None:
             f.readline() # consume header
-            stream = StringIO(f.read())
+            stream = wrap_stream(f)
             return parse_object(stream)
 
         d = {}
