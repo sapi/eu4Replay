@@ -75,6 +75,7 @@ Exactly 12 names are required, for obvious reasons.
 ### Loading Province Data
 
 The first thing you need to do is load the map data.  There are two ways to do this:
+
 1. File -> Map -> Load Provinces File
   * this will load a previously-generated provinces file
 2. File -> Map -> Build Provinces File
