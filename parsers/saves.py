@@ -55,14 +55,14 @@ def parse_object(stream):
     pos = stream.tell()
     obj = parse_object_dict(stream)
 
-    if not obj:
-        stream.seek(pos)
-        arr = parse_object_array(stream)
+    if obj is not None:
+        return obj
 
-        if arr:
-            return arr
+    # we failed to parse a dict, but maybe it's an array
+    stream.seek(pos)
+    obj = parse_object_array(stream)
 
-    return obj # default to empty dict
+    return obj # will be None if the parse failed
 
 
 def parse_object_array(stream):
@@ -71,7 +71,7 @@ def parse_object_array(stream):
 
     # if we have anything but whitespace, then maybe we have an array
     if not data.strip():
-        return []
+        return None
 
     # we seem to have two types of arrays:
     #  (1) newline-delimited arrays of strings
@@ -93,6 +93,7 @@ def parse_object_dict(stream):
         token, tpe = read_key(stream)
 
         # an empty type here means EOF before key
+        # this is ok; it's what we would expect
         # however, this could mean that it's an array instead
         # (come on Paradox, would it have hurt to use []? ><)
         # in any case, return, and handle that problem elsewhere
@@ -112,8 +113,10 @@ def parse_object_dict(stream):
         token, tpe = read_value(stream)
 
         # an empty type here always indicates EOF
+        # however, it's an EOF where we really weren't expecting one
+        # that suggests that the object is invalid
         if not tpe:
-            break
+            return None
 
         if tpe == '{':
             obj = parse_object(read_object(stream))
@@ -154,7 +157,10 @@ def parse_object_dict(stream):
             else:
                 d[key] = parse_token(token)
 
-    return d
+    # if we got to this point, and we don't have any keys, then clearly we
+    # failed to build a valid object
+    # we should therefore return none
+    return d if d else None
 
 
 def read_key(stream):
