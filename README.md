@@ -1,25 +1,25 @@
 eu4Replay
 =========
 
-# Screenshots
+## Screenshots
 
-## Windows
+### Windows
 
 ![Windows Screenshot](resources/images/windows_oman.png)
 
-## Ubuntu
+### Ubuntu
 
 ![Ubuntu Screenshot](resources/images/ubuntu_oman.png)
 
-# Installation
+## Installation
 
-## Windows
+### Windows
 
-A pre-compiled package is available here: https://dl.dropboxusercontent.com/u/1402749/eu4Replay.zip
+A pre-compiled package is available at https://dl.dropboxusercontent.com/u/1402749/eu4Replay.zip
 
-Alternatively, you can install the below dependencies, either from source or from binary distributions.  I have tested with the amd64 binaries here: http://www.lfd.uci.edu/~gohlke/pythonlibs/
+Alternatively, you can install the dependencies shown in the OS X & Linux section, either from source or from binary distributions.  I have tested with the amd64 binaries from http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
-## OS X & Linux
+### OS X & Linux
 
 Install Python 2.7 and the following dependencies using your favourite package manager (eg, brew on OS X).  Versions which have been tested are shown in brackets.
 
@@ -30,15 +30,17 @@ Dependencies:
 * matplotlib (1.2.1)
 * PIL (1.1.7)
 
-# Configuration
+After that, all that is required should be to clone this repo and configure your settings file.
 
-## Overview
+## Configuration
+
+### Overview
 
 Configuration takes place in `settings.cfg`.
 
 You must save any changes prior to launching the program.  Configuration changes are not currently supported via the GUI.
 
-## EU4 Directory
+### EU4 Directory
 
 You will need to specify the full path to your EU4 directory.
 
@@ -54,7 +56,7 @@ There is currently no intelligent mod support.  However, as long as your mod ove
 
 Proper mod support will be added in a later version.
 
-## Start and End Dates
+### Start and End Dates
 
 Enter `start_date` and `end_date` in `yyyy.mm.dd` format.
 
@@ -62,15 +64,15 @@ The program currently assumes that it will be able to determine the original own
 
 Unspecified behaviour may result if this is not possible.
 
-## Month Names
+### Month Names
 
 You may localise month names using the `month_names` settings key.
 
 Exactly 12 names are required, for obvious reasons.
 
-# Usage
+## Usage
 
-## Loading Province Data
+### Loading Province Data
 
 The first thing you need to do is load the map data.  There are two ways to do this:
 1. File -> Map -> Load Provinces File
@@ -81,11 +83,11 @@ The first thing you need to do is load the map data.  There are two ways to do t
   * you will be prompted for somewhere to save the file, so that you may re-use it in future
   * this should only be required if you are using a new map (eg, a mod)
 
-A provinces file for the default map is available here: https://dl.dropboxusercontent.com/u/1402749/provinces.zip
+A provinces file for the default map is available at https://dl.dropboxusercontent.com/u/1402749/provinces.zip
 
 This file must be unzipped before use.
 
-## Loading a Save File
+### Loading a Save File
 
 Next, you need to load a save file, by choosing File -> Saves -> Load Save File.
 
@@ -93,7 +95,7 @@ Parsing the save file can take a few minutes.  Getting the province histories th
 
 If this is an issue, I can look at further optimisation.
 
-## Viewing History
+### Viewing History
 
 Move the sliders to set the current date.
 
@@ -101,14 +103,24 @@ The map will update automatically, although it may take a few seconds if you're 
 
 Previously viewed dates are cached to enable instant back-tracking.  If this causes memory issues, a configuration setting can be added to disable this behaviour.
 
-# Known Issues & Planned Features
+## Known Issues & Planned Features
 
-## Known Issues
+### Known Issues
 
 * protectorates appear to disappear from the map
 * province *controller* is not yet shown on the map
 
-## Planned Features
+### Planned Features
 
 * mod support
 * zooming in (eg, on Europe)
+
+## License
+
+By downloading the software, you agree to abide by this license.
+
+You are **not** free to redistribute this software, or reuse any part of this program, without the express written permission from the author.
+
+All rights are reserved.
+
+This license may be updated from time to time by publishing modifications to this file on github.  You will be bound by any such modifications once published.
