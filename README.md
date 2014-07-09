@@ -15,7 +15,7 @@ eu4Replay
 
 ### Windows
 
-A pre-compiled package is available at https://dl.dropboxusercontent.com/u/1402749/eu4Replay.zip
+A pre-compiled package is available at http://goo.gl/uLUL2l
 
 Extract this package to a folder and run `eu4Replay.exe` in order to launch the program.  If this does not work, please file an issue; it is currently only tested on amd64 Windows 8.1.
 
@@ -86,7 +86,7 @@ The first thing you need to do is load the map data.  There are two ways to do t
   * you will be prompted for somewhere to save the file, so that you may re-use it in future
   * this should only be required if you are using a new map (eg, a mod)
 
-A provinces file for the default map is available at https://dl.dropboxusercontent.com/u/1402749/provinces.zip
+A provinces file for the default map is available at http://goo.gl/XlwaMY
 
 This file must be unzipped before use.
 
