@@ -17,6 +17,8 @@ eu4Replay
 
 A pre-compiled package is available at https://dl.dropboxusercontent.com/u/1402749/eu4Replay.zip
 
+Extract this package to a folder and run `eu4Replay.exe` in order to launch the program.  If this does not work, please file an issue; it is currently only tested on amd64 Windows 8.1.
+
 Alternatively, you can install the dependencies shown in the OS X & Linux section, either from source or from binary distributions.  I have tested with the amd64 binaries from http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 ### OS X & Linux
