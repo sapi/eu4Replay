@@ -231,6 +231,11 @@ def parse_token(token):
     # remove newlines, tabs etc
     token = token.strip()
 
+    # Dates: 1444.1.28 || "1444.1.28"
+    if token.count('.') == 2:
+        token = token.strip('"')
+        return datetime(*map(int, token.split('.')))
+
     # String: "<string>"
     if token.startswith('"') and token.endswith('"'):
         return token.strip('"')
@@ -238,10 +243,6 @@ def parse_token(token):
     # Boolean: yes|no
     if token in ('yes', 'no'):
         return token == 'yes'
-
-    # Dates
-    if token.count('.') == 2:
-        return datetime(*map(int, token.split('.')))
 
     # Numbers
     if '.' in token:
