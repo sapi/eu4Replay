@@ -218,20 +218,31 @@ class EU4Map(object):
                     country = self.countries[tag]
                     event = self.countryHistories[tag][date]
 
-                    # if we have a tag change, we must set the owner (and only
-                    # the owner) of all provinces owned by the old tag to the
-                    # new tag
+                    # if we have a tag change, we must set:
+                    #  * the owner of all provinces owned by the old tag; and
+                    #  * the controller of all provinces controlled by the
+                    #    old tag
+                    # to the new tag
                     if event[history.EVENT_TYPE] == history.EVENT_TAG_CHANGE:
                         oldTag = event[history.SOURCE_TAG]
 
-                        pIDs = [pID for pID,p in self.provinces.iteritems()
+                        ownedPIDs = [pID for pID,p in self.provinces.iteritems()
                                 if p.owner == oldTag]
 
-                        for pID in pIDs:
+                        for pID in ownedPIDs:
                             province = self.provinces[pID]
                             province.owner = tag
 
+                        controlledPIDs = [pID for pID,p
+                                in self.provinces.iteritems()
+                                if p.controller == oldTag]
+
+                        for pID in controlledPIDs:
+                            province = self.provinces[pID]
+                            province.controller = tag
+
                         # update the dirty provinces
+                        pIDs = set(ownedPIDs).union(controlledPIDs)
                         dirty = dirty.union(pIDs)
 
             # update the date cache so we can quickly get back to this date
