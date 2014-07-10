@@ -369,12 +369,16 @@ class GifWriter:
             if isinstance(im, Image.Image):
                 images2.append(im)
             elif np and isinstance(im, np.ndarray):
-                if im.ndim==3 and im.shape[2]==3:
-                    im = Image.fromarray(im,'RGB')
-                elif im.ndim==3 and im.shape[2]==4:
-                    im = Image.fromarray(im[:,:,:3],'RGB')
-                elif im.ndim==2:
-                    im = Image.fromarray(im,'L')
+                # Under python 2.7, we want to just try the coercion directly
+                try:
+                    im = Image.fromarray(im)
+                except:
+                    if im.ndim==3 and im.shape[2]==3:
+                        im = Image.fromarray(im,'RGB')
+                    elif im.ndim==3 and im.shape[2]==4:
+                        im = Image.fromarray(im[:,:,:3],'RGB')
+                    elif im.ndim==2:
+                        im = Image.fromarray(im,'L')
                 images2.append(im)
         
         # Convert to paletted PIL images
@@ -435,9 +439,9 @@ class GifWriter:
                 appext = self.getAppExt(loops)
         
                 # Write
-                fp.write(header.encode('utf-8'))
+                fp.write(header)
                 fp.write(globalPalette)
-                fp.write(appext.encode('utf-8'))
+                fp.write(appext)
         
                 # Next frame is not the first
                 firstFrame = False
@@ -456,13 +460,13 @@ class GifWriter:
                 # Write local header
                 if (palette != globalPalette) or (disposes[frames] != 2):
                     # Use local color palette
-                    fp.write(graphext.encode('utf-8'))
-                    fp.write(lid.encode('utf-8')) # write suitable image descriptor
+                    fp.write(graphext)
+                    fp.write(lid) # write suitable image descriptor
                     fp.write(palette) # write local color table
-                    fp.write('\x08'.encode('utf-8')) # LZW minimum size code
+                    fp.write('\x08') # LZW minimum size code
                 else:
                     # Use global color palette
-                    fp.write(graphext.encode('utf-8'))
+                    fp.write(graphext)
                     fp.write(imdes) # write suitable image descriptor
         
                 # Write image data
@@ -472,7 +476,7 @@ class GifWriter:
             # Prepare for next round
             frames = frames + 1
         
-        fp.write(";".encode('utf-8'))  # end gif
+        fp.write(";")  # end gif
         return frames
     
 
