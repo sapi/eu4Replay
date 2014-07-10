@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 
+from namespaces import Namespace
 
 # The parsing here takes place at module level.
 #
@@ -55,6 +56,9 @@ if _d['start_date'] >= _d['end_date']:
 # all month names must be provided
 if len(_d['month_names']) != 12:
     raise InvalidSettings('Wrong number of month names')
+
+# convert gif_settings to a Namespace
+_d['gif_settings'] = Namespace(**_d['gif_settings'])
 
 # Now, we import the settings to module scope
 globals().update(_d)
