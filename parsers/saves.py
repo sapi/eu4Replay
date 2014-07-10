@@ -147,7 +147,9 @@ def parse_object_dict(stream):
                 existing = d[key]
 
                 if isinstance(obj, dict) and isinstance(existing, dict):
-                    existing.update(obj)
+                    # EARLIER keys take precedence
+                    obj.update(existing)
+                    d[key] = obj
                 elif isinstance(obj, list) and isinstance(existing, list):
                     existing.extend(obj)
                 elif isinstance(existing, list):

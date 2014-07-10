@@ -411,6 +411,23 @@ class ParseObjectTests(unittest.TestCase):
 
         self.checkIsValid(s, expected)
 
+    def testRepeatedKeysWithDictValuesWithRepeatedKeysTakeFirst(self):
+        s = '''
+                key={
+                    one=1
+                }
+                key={
+                    one=2
+                }
+            '''
+        expected = {
+                'key': {
+                    'one': 1,
+                    },
+                }
+
+        self.checkIsValid(s, expected)
+
     # Key at EOF
     def testKeyAtEOFIsValid(self):
         s = 'key=value'
