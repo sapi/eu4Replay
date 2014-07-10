@@ -10,8 +10,11 @@ from parsers.saves import parse_save
 
 from viewer import frmEU4Viewer
 
-# explicit imports to keep py2exe happy
-from scipy.special import _ufuncs_cxx
+# explicit imports to keep py2exe happy seem to be required on Windows
+try:
+    from scipy.special import _ufuncs_cxx
+except ImportError:
+    pass
 from scipy import linalg
 
 
