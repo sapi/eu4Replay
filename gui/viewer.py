@@ -4,9 +4,11 @@
 import calendar
 from datetime import datetime
 import os
+from PIL import Image, ImageFont, ImageDraw
 from threading import Thread
 import wx
 
+from contrib.images2gif import writeGif
 from model.display import EU4Map
 import model.provinces as provinces
 import model.settings as settings
@@ -29,6 +31,8 @@ class frmEU4Viewer(wx.Frame):
     MENU_FILE_SAVES = 120
     MENU_FILE_SAVES_LOAD = 121
     MENU_FILE_SAVES_QUICKLOAD = 122
+
+    MENU_TOOLS_GIF = 210
 
     def __init__(self, parent, **kwargs):
         wx.Frame.__init__(self, None, title='EU4 Replay Viewer', **kwargs)
@@ -180,6 +184,13 @@ class frmEU4Viewer(wx.Frame):
 
         menuFileSaves.Append(self.MENU_FILE_SAVES_LOAD, '&Load Save File')
         self.Bind(wx.EVT_MENU, self.loadSave, id=self.MENU_FILE_SAVES_LOAD)
+
+        ## Tools menu
+        menuTools = wx.Menu()
+        menubar.Append(menuTools, '&Tools')
+
+        menuTools.Append(self.MENU_TOOLS_GIF, '&Create Animated GIF')
+        self.Bind(wx.EVT_MENU, self.createAnimatedGIF, id=self.MENU_TOOLS_GIF)
 
         #### Instance Variables
         ## Quick-to-load properties
@@ -356,6 +367,91 @@ class frmEU4Viewer(wx.Frame):
 
         wx.CallAfter(self._updateMapWithSave, provinceHistories,
                 countryHistories, datesWithEvents)
+
+    def createAnimatedGIF(self, evt):
+        path = self._promptForPath(
+                message='Choose where to save the image',
+                wildcard='GIF files (*.gif)|*.gif',
+                style=wx.FD_SAVE
+            )
+
+        if path is None:
+            return
+
+        # prepare the progress dialog
+        self.dlgProgress = wx.ProgressDialog(
+                title='Building GIF',
+                message='Generating intermediate images...',
+                style=wx.PD_APP_MODAL
+            )
+
+        # run asynchronously
+        thread = Thread(target=self._createAnimatedGIF, args=(path,))
+        thread.start()
+
+    def _createAnimatedGIF(self, path):
+        periodicThread = PeriodicThread(
+                target=lambda : wx.CallAfter(self.dlgProgress.Pulse),
+                period=0.1,
+            )
+        periodicThread.start()
+
+        # generate the images
+        imageData = []
+        
+        self.map.renderAtDate(settings.start_date)
+
+           # wayyyyy too much reaching into the map class.  fix!!
+        while self.map.date < settings.end_date:
+            imageData.append((self.map.img.copy(), self.map.date))
+
+            for _ in xrange(settings.gif_settings.tick_years):
+                self.map.tick(EU4Map.DELTA_YEAR)
+
+        # convert the images
+        wx.CallAfter(self.dlgProgress.UpdatePulse, 'Converting images...')
+        
+        images = []
+        
+        for i,(img,date) in enumerate(imageData):
+            images.append(self._annotateImage((img, date)))
+            imageData[i] = None # clean up ASAP to prevent memory overflow
+
+        # build the gif file
+        wx.CallAfter(self.dlgProgress.UpdatePulse, 'Creating GIF file...')
+        writeGif(path, images, duration=settings.gif_settings.tick_duration)
+
+        periodicThread.stop()
+        wx.CallAfter(self.dlgProgress.Destroy)
+
+    # this does not belong here; we need a refactor
+    def _annotateImage(self, (img, date)):
+        if isinstance(img, Image.Image):
+            im = img
+        else:
+            im = Image.fromarray(img)
+
+        # TODO: move all the magic numbers from here (as part of refactor)
+        msgFont = ImageFont.truetype('resources/fonts/Ubuntu-L.ttf', 75)
+        dateFont = ImageFont.truetype('resources/fonts/Ubuntu-R.ttf', 75)
+
+        draw = ImageDraw.Draw(im)
+
+        message = 'https://github.com/sapi/eu4Replay/'
+        margin = 50
+        fill = 'rgb(255,255,255)'
+
+        dateString = '%s.%s.%s'%(date.year, date.month, date.day)
+        
+        iw,ih = im.size
+        fw,fh = msgFont.getsize(message)
+        dfw,dfh = dateFont.getsize(dateString)
+
+        draw.text((margin, ih - fh - margin), message, font=msgFont, fill=fill)
+        draw.text((margin, ih - fh - dfh - margin*2), dateString, 
+                font=dateFont, fill=fill)
+
+        return im
 
     @property
     def map(self):
