@@ -3,9 +3,15 @@
 
 
 from datetime import datetime, timedelta
+import numpy as np
 
 import model.settings as settings
 import parsers.history as history
+
+
+def get_controller_mask_gen_for_width(width):
+    # diagonal stripes based on array indices
+    return lambda i,j,k: (i + j)%(2*width) < width
 
 
 class EU4Map(object):
@@ -18,6 +24,8 @@ class EU4Map(object):
     DELTA_YEAR = 'DELTA_YEAR'
     DELTA_DECADE = 'DELTA_DECADE'
 
+    STRIPE_WIDTH = 5
+
     def __init__(self, img, provinces, countries, mapObject):
         self.img = img
         self.provinces = provinces
@@ -27,6 +35,10 @@ class EU4Map(object):
         self.countryHistories = {}
         self.provinceHistories = {}
         self.datesWithEvents = {}
+
+        # controller mask
+        fMask = get_controller_mask_gen_for_width(EU4Map.STRIPE_WIDTH)
+        self.controllerMask = np.fromfunction(fMask, self.img.shape)
 
         # build original owners and controllers, so they can be restored
         self.dateCache = {}
@@ -101,15 +113,25 @@ class EU4Map(object):
 
         # unowned provinces are uncolonised
         if province.owner in self.countries:
-            country = self.countries[province.owner]
-            assert country.col, '%s has no colour set'%country
+            owner = self.countries[province.owner]
+            assert owner.col, '%s has no colour set'%owner
 
-            col = country.col
+            ownerCol = owner.col
         else:
-            col = EU4Map.UNCOLONISED_COLOUR
+            ownerCol = EU4Map.UNCOLONISED_COLOUR
+
+        # work out the controller
+        if province.controller in (None, '---', province.owner):
+            controllerCol = ownerCol
+        else:
+            controller = self.countries[province.controller]
+            assert controller.col, '%s has no colour set'%controller
+            
+            controllerCol = controller.col
 
         assert province.maskIdxs is not None, '%s has no mask'%province
-        self.img[province.maskIdxs] = col
+        self.img[province.maskIdxs] = np.where(
+                self.controllerMask[province.maskIdxs], controllerCol, ownerCol)
 
     def redraw(self, dirty=None):
         if dirty is None:
