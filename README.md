@@ -106,18 +106,6 @@ The map will update automatically, although it may take a few seconds if you're 
 
 Previously viewed dates are cached to enable instant back-tracking.  If this causes memory issues, a configuration setting can be added to disable this behaviour.
 
-## Known Issues & Planned Features
-
-### Known Issues
-
-* protectorates appear to disappear from the map
-* province *controller* is not yet shown on the map
-
-### Planned Features
-
-* mod support
-* zooming in (eg, on Europe)
-
 ## License
 
 By downloading the software, you agree to abide by this license.
