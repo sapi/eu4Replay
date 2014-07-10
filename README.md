@@ -72,6 +72,14 @@ You may localise month names using the `month_names` settings key.
 
 Exactly 12 names are required, for obvious reasons.
 
+## Animated GIFs
+
+The `gif_settings` key contains several options which control how animated GIFs are generated:
+* `tick_duration` is the time, in seconds, that a frame is displayed before the GIF changes
+* `tick_years` is the time, in years, between frames
+
+A GIF will be generated for all times between `start_date` and `end_date` (or as close as is possible given the value of `tick_years`.
+
 ## Usage
 
 ### Loading Province Data
