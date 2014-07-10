@@ -23,7 +23,10 @@ def parse_countries(eu4Dir):
 
                 tag,_,subPath = map(str.strip, line.partition('='))
 
-                subPath = subPath.strip('"')
+                # clean up the path
+                subPath,_,_ = subPath.partition('#')
+                subPath = subPath.strip().strip('"').strip()
+
                 fn = os.path.join(commonDir, *subPath.split('/'))
 
                 assert tag not in countries
