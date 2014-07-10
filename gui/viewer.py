@@ -32,7 +32,8 @@ class frmEU4Viewer(wx.Frame):
     MENU_FILE_SAVES_LOAD = 121
     MENU_FILE_SAVES_QUICKLOAD = 122
 
-    MENU_TOOLS_GIF = 210
+    MENU_TOOLS_SCREENSHOT = 210
+    MENU_TOOLS_GIF = 220
 
     def __init__(self, parent, **kwargs):
         wx.Frame.__init__(self, None, title='EU4 Replay Viewer', **kwargs)
@@ -188,6 +189,10 @@ class frmEU4Viewer(wx.Frame):
         ## Tools menu
         menuTools = wx.Menu()
         menubar.Append(menuTools, '&Tools')
+
+        menuTools.Append(self.MENU_TOOLS_SCREENSHOT, '&Export Screenshot')
+        self.Bind(wx.EVT_MENU, self.exportScreenshot,
+                id=self.MENU_TOOLS_SCREENSHOT)
 
         menuTools.Append(self.MENU_TOOLS_GIF, '&Create Animated GIF')
         self.Bind(wx.EVT_MENU, self.createAnimatedGIF, id=self.MENU_TOOLS_GIF)
@@ -367,6 +372,22 @@ class frmEU4Viewer(wx.Frame):
 
         wx.CallAfter(self._updateMapWithSave, provinceHistories,
                 countryHistories, datesWithEvents)
+
+    def exportScreenshot(self, evt):
+        path = self._promptForPath(
+                message='Choose where to save the image',
+                wildcard='PNG files (*.png)|*.png',
+                style=wx.FD_SAVE
+            )
+
+        if path is None:
+            return
+
+        # this is quick enough to not bother with an async thread
+        if not path.endswith('.png'):
+            path += '.png' # better hope they didn't put '.jpg'...
+
+        self.map.saveImage(path)
 
     def createAnimatedGIF(self, evt):
         path = self._promptForPath(

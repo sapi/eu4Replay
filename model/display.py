@@ -4,6 +4,7 @@
 
 from datetime import datetime, timedelta
 import numpy as np
+from scipy.misc import imsave
 
 import model.settings as settings
 import parsers.history as history
@@ -48,6 +49,9 @@ class EU4Map(object):
             }
 
         self.reset()
+
+    def saveImage(self, path):
+        imsave(path, self.img)
 
     def loadSave(self, provinceHistories, countryHistories, datesWithEvents):
         self.countryHistories = countryHistories
