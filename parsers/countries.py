@@ -49,3 +49,33 @@ def parse_country_file(fn, country):
                 cols = filter(None, cols.split())
                 
                 country.col = tuple(map(int, cols))
+
+
+def create_dynamic_countries(save, countries):
+    # build lists of masters
+    assert 'countries' in save
+    subjects = { 
+            tag : data['subjects'] if 'subjects' in data else []
+                for tag,data in save['countries'].iteritems()
+            }
+
+    masters = {}
+
+    for master,subjs in subjects.iteritems():
+        for subject in subjs:
+            masters[subject] = master
+
+    # now actually create the country objects
+    assert 'dynamic_countries' in save
+
+    for tag in save['dynamic_countries']:
+        if tag not in countries:
+            countries[tag] = Country(tag)
+
+        country = countries[tag]
+
+        if tag in masters:
+            master = countries[masters[tag]]
+            country.col = master.col
+        else:
+            country.col = [0, 0, 0]
