@@ -11,6 +11,7 @@ from model.display import EU4Map
 import model.provinces as provinces
 import model.settings as settings
 from model.setup import setup_countries, setup_map, setup_provinces
+from parsers.countries import create_dynamic_countries
 from parsers.provinces import parse_province_original_owners
 from parsers.history import build_history
 from parsers.saves import parse_save
@@ -342,6 +343,13 @@ class frmEU4Viewer(wx.Frame):
         assert self.provinces is not None # should test for this earlier
         provinceHistories, countryHistories, datesWithEvents \
                 = build_history(self.save, self.provinces)
+
+        # create dynamic countries
+        wx.CallAfter(self.dlgProgress.UpdatePulse,
+                'Creating dynamic countries...')
+
+        assert self.countries is not None
+        create_dynamic_countries(self.save, self.countries)
 
         periodicThread.stop()
         wx.CallAfter(self.dlgProgress.Destroy)
