@@ -127,12 +127,6 @@ def parse_object_dict(stream):
         key = parse_token(token)
         token, tpe = read_value(stream)
 
-        # an empty type here always indicates EOF
-        # however, it's an EOF where we really weren't expecting one
-        # that suggests that the object is invalid
-        if not tpe:
-            return None
-
         if tpe == '{':
             substream = read_object(stream)
             obj = parse_object(substream) if substream is not None else None
@@ -163,6 +157,14 @@ def parse_object_dict(stream):
             else:
                 d[key] = obj
         else:
+            # an empty type here always indicates EOF
+            #  - if we read a token, we should parse that before breaking
+            #  - if we did not, this was an unexpected EOF, which is an error
+            token = parse_token(token)
+
+            if not tpe and not token:
+                return None
+
             if key in d:
                 existing = d[key]
 
@@ -171,7 +173,11 @@ def parse_object_dict(stream):
                 else:
                     d[key] = [existing, token]
             else:
-                d[key] = parse_token(token)
+                d[key] = token
+
+            # break on EOF after parsing
+            if not tpe:
+                break
 
     # if we got to this point, and we don't have any keys, then clearly we
     # failed to build a valid object

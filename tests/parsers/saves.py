@@ -411,6 +411,15 @@ class ParseObjectTests(unittest.TestCase):
 
         self.checkIsValid(s, expected)
 
+    # Key at EOF
+    def testKeyAtEOFIsValid(self):
+        s = 'key=value'
+        expected = {
+                'key': 'value',
+                }
+
+        self.checkIsValid(s, expected)
+
     # Invalid child objects
     def testObjectWithInvalidChildObjectIsValid(self):
         s = '''
