@@ -198,10 +198,6 @@ class frmEU4Viewer(wx.Frame):
         self.Bind(wx.EVT_MENU, self.createAnimatedGIF, id=self.MENU_TOOLS_GIF)
 
         #### Instance Variables
-        ## Quick-to-load properties
-        self.img, self.mapObject = setup_map()
-        self.countries = setup_countries()
-
         ## Properties which require user intervention
         self.provinces = None
         self.save = None
@@ -211,6 +207,36 @@ class frmEU4Viewer(wx.Frame):
         ## Date label
         self.updateDateLabel(settings.start_date)
         self.updateStatus()
+
+        ## Map, countries
+        wx.FutureCall(0, self._deferredSetup)
+
+    def _deferredSetup(self):
+        # prepare the progress dialog
+        self.dlgProgress = wx.ProgressDialog(
+                title='Loading data',
+                message='Setting up map...',
+                style=wx.PD_APP_MODAL
+            )
+
+        # run asynchronously
+        thread = Thread(target=self._deferredSetupBackground)
+        thread.start()
+
+    def _deferredSetupBackground(self):
+        periodicThread = PeriodicThread(
+                target=lambda : wx.CallAfter(self.dlgProgress.Pulse),
+                period=0.1,
+            )
+        periodicThread.start()
+
+        self.img, self.mapObject = setup_map()
+
+        wx.CallAfter(self.dlgProgress.UpdatePulse, 'Building country data...')
+        self.countries = setup_countries()
+
+        periodicThread.stop()
+        wx.CallAfter(self.dlgProgress.Destroy)
 
     ## Menu Event Callbacks
     def _promptForPath(self, message, wildcard, style):
