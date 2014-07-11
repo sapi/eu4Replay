@@ -283,7 +283,7 @@ def wrap_stream(f):
     return StringIO(f.read())
     
 
-def parse_save(fn, topLevelKeys=None):
+def parse_file(fn, topLevelKeys=None):
     with open(fn, 'rU') as f:
         if topLevelKeys is None:
             f.readline() # consume header

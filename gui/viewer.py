@@ -16,7 +16,7 @@ from model.setup import setup_countries, setup_map, setup_provinces
 from parsers.countries import create_dynamic_countries
 from parsers.provinces import parse_province_original_owners
 from parsers.history import build_history
-from parsers.saves import parse_save
+from parsers.files import parse_file
 
 from helpers import PeriodicThread
 from plotting import pnlImagePlot

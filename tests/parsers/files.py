@@ -2,8 +2,8 @@ from datetime import datetime
 from StringIO import StringIO
 import unittest
 
-from parsers.saves import parse_object
-from parsers.saves import read_token
+from parsers.files import parse_object
+from parsers.files import read_token
 
 
 def suite():

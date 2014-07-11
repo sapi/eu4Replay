@@ -10,7 +10,7 @@ from parsers.countries import parse_countries
 from parsers.provinces \
         import parse_province_definitions, parse_province_regions, \
                parse_province_original_owners
-from parsers.saves import parse_object
+from parsers.files import parse_object
 
 
 def flushed_write(s):

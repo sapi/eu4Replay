@@ -2,12 +2,12 @@
 
 import unittest
 
-import tests.parsers.saves
+import tests.parsers.files
 
 
 def suite():
     return unittest.TestSuite([
-        tests.parsers.saves.suite(),
+        tests.parsers.files.suite(),
         ])
 
 
