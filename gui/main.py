@@ -3,11 +3,6 @@
 
 import wx
 
-from model.display import EU4Map
-from model.setup import setup_data
-from parsers.history import build_history
-from parsers.saves import parse_save
-
 from viewer import frmEU4Viewer
 
 # explicit imports to keep py2exe happy seem to be required on Windows
