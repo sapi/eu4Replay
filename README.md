@@ -3,13 +3,13 @@ eu4Replay
 
 ## Screenshots
 
-### Windows
+### Interface
 
-![Windows Screenshot](resources/images/windows_oman.png)
+![Windows Interface](resources/images/windows_oman.png)
 
-### Ubuntu
+### Exported Map (with mod support!)
 
-![Ubuntu Screenshot](resources/images/ubuntu_oman.png)
+![VEF Export](resources/images/vef.png)
 
 ## Installation
 
@@ -58,6 +58,16 @@ There is currently no intelligent mod support.  However, as long as your mod ove
 
 Proper mod support will be added in a later version.
 
+### Mod Support
+
+If your save file was created using a mod, you will need to fill out the `mods` settings.
+
+Set `mods_directory` to your mods directory.  If you are on windows, you can try leaving this empty; the program will try to determine it automatically.
+
+Set `mod_name` to the name of your mod.  This should be the name of the mod file, without the extension (eg, for `vef.mod`, `"mod_name": "vef").
+
+Both compressed and uncompressed mods are supported.  However, you will get much better performance with an uncompressed mod.
+
 ### Start and End Dates
 
 Enter `start_date` and `end_date` in `yyyy.mm.dd` format.
@@ -72,7 +82,7 @@ You may localise month names using the `month_names` settings key.
 
 Exactly 12 names are required, for obvious reasons.
 
-## Animated GIFs
+### Animated GIFs
 
 The `gif_settings` key contains several options which control how animated GIFs are generated:
 * `tick_duration` is the time, in seconds, that a frame is displayed before the GIF changes
