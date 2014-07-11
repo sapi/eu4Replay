@@ -50,9 +50,6 @@ class EU4Map(object):
 
         self.reset()
 
-    def saveImage(self, path):
-        imsave(path, self.img)
-
     def loadSave(self, provinceHistories, countryHistories, datesWithEvents):
         self.countryHistories = countryHistories
         self.provinceHistories = provinceHistories

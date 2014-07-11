@@ -414,7 +414,8 @@ class frmEU4Viewer(wx.Frame):
         if not path.endswith('.png'):
             path += '.png' # better hope they didn't put '.jpg'...
 
-        self.map.saveImage(path)
+        im = self._annotateImage((self.map.img, self.map.date))
+        im.save(path)
 
     def createAnimatedGIF(self, evt):
         path = self._promptForPath(
