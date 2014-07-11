@@ -2,7 +2,7 @@ from datetime import datetime
 from StringIO import StringIO
 import unittest
 
-from parsers.saves import read_object, parse_object
+from parsers.saves import parse_object
 from parsers.saves import read_token
 
 
@@ -10,51 +10,55 @@ def suite():
     loader = unittest.TestLoader()
 
     return unittest.TestSuite([
-        loader.loadTestsFromTestCase(ReadObjectTests),
-        loader.loadTestsFromTestCase(ParseObjectTests),
+        loader.loadTestsFromTestCase(ParseObjectReadingTests),
+        loader.loadTestsFromTestCase(ParseObjectParsingTests),
         loader.loadTestsFromTestCase(ReadTokenTests),
         ])
 
 
-class ReadObjectTests(unittest.TestCase):
-    def _stripObjectString(self, s):
-        return s.strip().strip('{}').strip()
+class ParseObjectReadingTests(unittest.TestCase):
+    def _buildStream(self, s):
+        # parse_object requires there to be no starting brace
+        # this is because the top level of the save file has no braces, and
+        # the starting brace is removed before a recursive call
+        if s.strip().startswith('{'):
+            _,_,s = s.partition('{')
 
-    def assertObjectValid(self, obj, expected):
-        objString = self._stripObjectString(obj.read())
-        expectedString = self._stripObjectString(expected)
+        return StringIO(s)
 
-        self.assertTrue(objString, expectedString)
+    def checkIsValid(self, s, expectedRemainder, **kwargs):
+        stream = self._buildStream(s)
+        obj = parse_object(stream, **kwargs)
 
-    def assertObjectInvalid(self, obj):
+        self.assertIsNotNone(obj)
+
+        remaining = stream.read().strip()
+        expectedRemainder = expectedRemainder.strip()
+
+        self.assertEqual(remaining, expectedRemainder)
+
+    def checkIsInvalid(self, s, **kwargs):
+        stream = self._buildStream(s)
+        obj = parse_object(stream, **kwargs)
+
         self.assertIsNone(obj)
-
-    def check(self, s, shouldBeValid, expected=None):
-        if expected is None:
-            expected = s
-
-        stream = StringIO(s)
-        obj = read_object(stream)
-        
-        if shouldBeValid:
-            self.assertObjectValid(obj, expected)
-        else:
-            self.assertObjectInvalid(obj)
 
     ## Valid objects: tests should pass
     def testSingleKeyValuePairIsValid(self):
         s = '''{
                 key=value
                }'''
+        expectedRemainder = ''
 
-        self.check(s, True)
+        self.checkIsValid(s, expectedRemainder)
 
     def testSingleElementArrayIsValid(self):
         s = '''{
                 element
                }'''
+        expectedRemainder = ''
 
-        self.check(s, True)
+        self.checkIsValid(s, expectedRemainder)
 
     def testNestedDictIsValid(self):
         s = '''{
@@ -62,15 +66,17 @@ class ReadObjectTests(unittest.TestCase):
                     key=value
                     }
                 }'''
+        expectedRemainder = ''
 
-        self.check(s, True)
+        self.checkIsValid(s, expectedRemainder)
 
     def testOnlyFirstObjectIsParsedWhenIdentical(self):
         s = '''{
                 key=value
                 }'''
+        expectedRemainder = s
 
-        self.check(s*2, True, expected=s)
+        self.checkIsValid(s*2, expectedRemainder)
 
     def testOnlyFirstObjectIsParsedWhenDifferent(self):
         s = '''{
@@ -79,8 +85,9 @@ class ReadObjectTests(unittest.TestCase):
         other = '''{
                     element
                     }'''
+        expectedRemainder = other
 
-        self.check(s + other, True, expected=s)
+        self.checkIsValid(s + other, expectedRemainder)
 
     def testObjectParsedWhenNextObjectIsInvalid(self):
         s = '''{
@@ -88,31 +95,41 @@ class ReadObjectTests(unittest.TestCase):
                 }'''
         other = '''{
                     element'''
+        expectedRemainder = other
 
-        self.check(s + other, True, expected=s)
+        self.checkIsValid(s + other, expectedRemainder)
 
+    def testNoBracesIsValid(self):
+        s = 'key=value'
+        expectedRemainder = ''
+
+        self.checkIsValid(s, expectedRemainder)
 
     ## Invalid objects: tests should fail
     def testEmptyObjectIsInvalid(self):
         s = ''
 
-        self.check(s, False)
+        self.checkIsInvalid(s)
 
     def testMissingEndBraceIsInvalid(self):
         s = '''{
                 key=value'''
 
-        self.check(s, False)
-
-    def testNoBracesIsInvalid(self):
-        s = 'key=value'
-
-        self.check(s, False)
+        self.checkIsInvalid(s, allowEOF=False)
 
 
-class ParseObjectTests(unittest.TestCase):
+class ParseObjectParsingTests(unittest.TestCase):
+    def _buildStream(self, s):
+        # parse_object requires there to be no starting brace
+        # this is because the top level of the save file has no braces, and
+        # the starting brace is removed before a recursive call
+        if s.strip().startswith('{'):
+            _,_,s = s.partition('{')
+
+        return StringIO(s)
+
     def checkIsValid(self, s, expected):
-        stream = StringIO(s)
+        stream = self._buildStream(s)
         result = parse_object(stream)
         
         if isinstance(expected, dict):
@@ -123,7 +140,7 @@ class ParseObjectTests(unittest.TestCase):
             self.assertListEqual(result, expected)
 
     def checkIsInvalid(self, s):
-        stream = StringIO(s)
+        stream = self._buildStream(s)
         result = parse_object(stream)
 
         self.assertIsNone(result)
@@ -169,7 +186,7 @@ class ParseObjectTests(unittest.TestCase):
     # Simple arrays
     def testSingleElementArrayIsValid(self):
         s = '''
-                item
+                { item }
             '''
         expected = [
                 'item',
@@ -178,9 +195,9 @@ class ParseObjectTests(unittest.TestCase):
         self.checkIsValid(s, expected)
 
     def testSingleElementStringArrayIsValid(self):
-        s = '''
+        s = '''{
                 "Multiple Word String"
-            '''
+            }'''
         expected = [
                 'Multiple Word String',
                 ]
@@ -189,7 +206,7 @@ class ParseObjectTests(unittest.TestCase):
 
     def testMultipleElementArrayIsValid(self):
         s = '''
-                multiple words are different
+                { multiple words are different }
             '''
         expected = [
                 'multiple',
@@ -201,10 +218,10 @@ class ParseObjectTests(unittest.TestCase):
         self.checkIsValid(s, expected)
 
     def testMultipleElementStringArrayIsValid(self):
-        s = '''
+        s = '''{
                 "Multiple Word String"
                 "Another String"
-            '''
+            }'''
         expected = [
                 'Multiple Word String',
                 'Another String',

@@ -9,53 +9,14 @@ from StringIO import StringIO
 # < crap on first line >
 # key=value
 # value -{ "string", number, yes|no, array or dict
-
-def read_object(stream):
-    output = StringIO()
-
-    # read to the start of the object
-    _, tpe = read_token(stream, {'{': False, '': False})
-
-    # empty tpe is EOF
-    # EOF indicates a failure to read an object, so we should return None
-    if not tpe:
-        return None
-
-    # we don't want any leading spaces
-    c = stream.read(1)
-
-    while c.isspace():
-        c = stream.read(1)
-
-    stream.seek(-1, 1)
-
-    # now read until we get back to 0
-    indent = 1
-
-    while indent:
-        token, tpe = read_token(stream, {'{': False, '}': False, '': False},
-                readSize=64)
-
-        output.write(token)
-
-        # if we hit EOF, we failed to read the object, and should return None
-        if not tpe:
-            return None
-
-        indent += 1 if tpe == '{' else -1
-
-        if indent:
-            output.write(tpe)
-
-    # seek to start of stream
-    output.seek(0)
-
-    return output
+#
+# dict: as above (top level of save file is dict)
+# array: either space-delimited non-strings, or newline delimited "strings"
 
 
-def parse_object(stream):
+def parse_object(stream, allowEOF=True):
     pos = stream.tell()
-    obj = parse_object_dict(stream)
+    obj = parse_object_dict(stream, allowEOF=allowEOF)
 
     if obj is not None:
         return obj
@@ -68,16 +29,17 @@ def parse_object(stream):
 
 
 def parse_object_array(stream):
-    # grab all the data at once
-    data = stream.read()
+    # read to the end of the array
+    data, tpe = read_array(stream)
+
+    # if we terminated on anything *except* an end of object char, we cannot
+    # parse an array (this includes EOF)
+    # this is because an array cannot be at file scope
+    if tpe != '}':
+        return None
 
     # if we have anything but whitespace, then maybe we have an array
     if not data.strip():
-        return None
-
-    # if there is anything which looks like a key-value pair here, we don't
-    # want to parse the array
-    if '=' in data:
         return None
 
     # we seem to have two types of arrays:
@@ -100,36 +62,42 @@ def parse_object_array(stream):
 
     return arr
 
-def parse_object_dict(stream):
+def parse_object_dict(stream, allowEOF):
     d = {}
+
+    endOfObjectMarks = ('', '}') if allowEOF else ('}',)
 
     while 1:
         token, tpe = read_key(stream)
+        key = parse_token(token)
 
-        # an empty type here means EOF before key
-        # this is ok; it's what we would expect
-        # however, this could mean that it's an array instead
-        # (come on Paradox, would it have hurt to use []? ><)
-        # in any case, return, and handle that problem elsewhere
-        if not tpe:
-            break
+        # in a well-formed object, we expect to terminate here
+        # we should also exit with failure if we get an unexpected EOF
+        # it is always an error to have a non-null key upon termination
+        if tpe in endOfObjectMarks:
+            if not key:
+                break
+            return None
+        elif not tpe:
+            return None
 
         # there are sometimes empty objects chilling here
+        # we consume them to move the stream forward, then ignore them
+        # warning: here be dragons
         if tpe == '{':
-            substream = read_object(stream)
-            obj = parse_object(substream) if substream is not None else None
-            # ignore this object
-            # warning: here be dragons
+            obj = parse_object(stream)
             continue
 
         assert tpe == '='
 
-        key = parse_token(token)
         token, tpe = read_value(stream)
 
+        # if we're at the start of an object, recursively parse it
+        # as this is a nested object, finding an EOF while parsing it will
+        # necessarily mean that we can't finish parsing *this* object
+        # as such, EOFs cannot be permitted
         if tpe == '{':
-            substream = read_object(stream)
-            obj = parse_object(substream) if substream is not None else None
+            obj = parse_object(stream, allowEOF=False)
 
             # if we already have a key for this value, then we have a number
             # of options:
@@ -159,12 +127,12 @@ def parse_object_dict(stream):
             else:
                 d[key] = obj
         else:
-            # an empty type here always indicates EOF
+            # if we see the end of object marks here, then:
             #  - if we read a token, we should parse that before breaking
             #  - if we did not, this was an unexpected EOF, which is an error
             token = parse_token(token)
 
-            if not tpe and not token:
+            if not token and tpe in endOfObjectMarks:
                 return None
 
             if key in d:
@@ -177,20 +145,34 @@ def parse_object_dict(stream):
             else:
                 d[key] = token
 
-            # break on EOF after parsing
-            if not tpe:
+            # break on end of object after parsing
+            # as before, exit with failure on unexpected EOF
+            if tpe in endOfObjectMarks:
                 break
+            elif not tpe:
+                return None
 
     # if we got to this point, and we don't have any keys, then clearly we
     # failed to build a valid object
-    # we should therefore return none
+    # we should therefore return None
     return d if d else None
+
+
+def read_array(stream):
+    endTokenMarkers = {
+            '}': False, # valid
+            '=': False, # invalid
+            '': False, # invalid
+            }
+
+    return read_token(stream, endTokenMarkers)
 
 
 def read_key(stream):
     endTokenMarkers = {
             '=': False,
-            '{': True,
+            '{': False,
+            '}': False,
             '': False,
             }
 
@@ -199,7 +181,8 @@ def read_key(stream):
 
 def read_value(stream):
     endTokenMarkers = {
-            '{': True,
+            '{': False,
+            '}': False,
             '\n': False,
             '': False,
             }
@@ -214,13 +197,14 @@ def read_value(stream):
 
 
 def read_token(stream, endTokenMarkers, readSize=8):
-    output = ''
+    output = []
+    lengths = []
 
     # read in chunks of readSize
     # we keep track of how many bytes we will have to rewind once a valid
     # end token marker is found
     s = stream.read(readSize)
-    n = len(s)
+    lengths.append(len(s))
 
     while 1:
         if not s:
@@ -228,21 +212,22 @@ def read_token(stream, endTokenMarkers, readSize=8):
             break
 
         for c in s:
-            n -= 1
-
             if c in endTokenMarkers:
                 break
 
-            output += c
+            output.append(c)
 
         if c in endTokenMarkers:
             break
 
         s = stream.read(readSize)
-        n = len(s)
+        lengths.append(len(s))
 
     # rewind every remaining byte in our read, plus the token if necessary
+    n = sum(lengths) - len(output) - 1
     stream.seek(-(n + endTokenMarkers[c]), 1)
+
+    output = ''.join(output)
 
     return output, c
 
@@ -312,9 +297,7 @@ def parse_save(fn, topLevelKeys=None):
 
             for k in topLevelKeys:
                 if line.startswith(k):
-                    stream = read_object(f)
-                    assert stream is not None
-
+                    stream = wrap_stream(f)
                     d[k] = parse_object(stream)
 
                     if len(d) == len(topLevelKeys):
