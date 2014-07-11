@@ -106,7 +106,9 @@ The first thing you need to do is load the map data.  There are two ways to do t
   * you will be prompted for somewhere to save the file, so that you may re-use it in future
   * this should only be required if you are using a new map (eg, a mod)
 
-A provinces file for the default map is available at http://goo.gl/XlwaMY
+Available provinces files:
+* default map: http://goo.gl/XlwaMY
+* VEF: https://dl.dropboxusercontent.com/u/1402749/provinces_vef.zip
 
 This file must be unzipped before use.
 
