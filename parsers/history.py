@@ -61,7 +61,8 @@ def build_history(save, provinces):
     assert 'countries' in save
     
     for tag,d in save['countries'].iteritems():
-        if 'history' not in d:
+        # some mods put extra data in the 'countries' dict
+        if not isinstance(d, dict) or 'history' not in d:
             continue
 
         if tag not in countryHistories:

@@ -4,43 +4,39 @@
 import os
 
 from model.countries import Country
+import model.settings as settings
+from tools.paths import get_path_components
 
 
-def parse_countries(eu4Dir):
+def parse_countries():
     countries = {}
 
-    commonDir = os.path.join(eu4Dir, 'common')
-    tagsDir = os.path.join(commonDir, 'country_tags')
+    for f in settings.mods.mod.iterdir('common', 'country_tags'):
+        for line in f:
+            if line.startswith('#') or not line.strip():
+                continue
 
-    tagFilenames = os.listdir(tagsDir) 
-    tagPaths = map(lambda fn: os.path.join(tagsDir, fn), tagFilenames)
-    
-    for path in tagPaths:
-        with open(path, 'rU') as f:
-            for line in f:
-                if line.startswith('#') or not line.strip():
-                    continue
+            tag,_,subPath = map(str.strip, line.partition('='))
 
-                tag,_,subPath = map(str.strip, line.partition('='))
+            # clean up the path
+            subPath,_,_ = subPath.partition('#')
+            subPath = subPath.strip().strip('"').strip()
 
-                # clean up the path
-                subPath,_,_ = subPath.partition('#')
-                subPath = subPath.strip().strip('"').strip()
+            components = ['common'] + get_path_components(subPath)
 
-                fn = os.path.join(commonDir, *subPath.split('/'))
+            assert tag not in countries
+            country = countries[tag] = Country(tag)
 
-                assert tag not in countries
-                country = countries[tag] = Country(tag)
-
-                parse_country_file(fn, country)
+            parse_country_file(components, country)
 
     return countries
 
 
-def parse_country_file(fn, country):
-    country.name = os.path.basename(fn).rsplit('.', 1)[0]
+def parse_country_file(pathComponents, country):
+    basename = os.path.basename(os.path.join(*pathComponents))
+    country.name = basename.rsplit('.', 1)[0]
 
-    with open(fn, 'rU') as f:
+    with settings.mods.mod.open(*pathComponents) as f:
         for line in f:
             if line.startswith('color'):
                 _,_,end = line.partition('=')
@@ -57,6 +53,7 @@ def create_dynamic_countries(save, countries):
     subjects = { 
             tag : data['subjects'] if 'subjects' in data else []
                 for tag,data in save['countries'].iteritems()
+                if isinstance(data, dict)
             }
 
     masters = {}

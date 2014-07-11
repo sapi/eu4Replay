@@ -5,12 +5,13 @@ import numpy as np
 import os
 
 from model.provinces import Province
+import model.settings as settings
 
 
-def parse_province_definitions(fn):
+def parse_province_definitions():
     provinces = {}
 
-    with open(fn, 'rU') as f:
+    with settings.mods.mod.provinceDefinitionFile as f:
         for line in f:
             pID,r,g,b,name,_ = line.strip().split(';')
 
@@ -37,41 +38,30 @@ def parse_province_regions(img, provinces):
             )
 
 
-def parse_province_original_owners(historyDir, provinces):
-    assert os.path.isdir(historyDir)
-
-    subdirs = os.listdir(historyDir)
-    assert 'provinces' in subdirs
-
-    provincesDir = os.path.join(historyDir, 'provinces')
-
-    filenames = os.listdir(provincesDir)
-    paths = map(lambda fn: os.path.join(provincesDir, fn), filenames)
-
-    for path in paths:
+def parse_province_original_owners(provinces):
+    for f in settings.mods.mod.iterdir('history', 'provinces'):
         # work out what province this is for
-        pID = lazy_atoi(os.path.basename(path))
+        pID = lazy_atoi(os.path.basename(f.name))
 
         assert pID in provinces
         province = provinces[pID]
 
         # now grab the data we want from the file
-        with open(path, 'rU') as f:
-            for line in f:
-                if line.startswith('owner'):
-                    _,_,owner = line.partition('=')
-                    
-                    if '#' in owner:
-                        owner = owner[:owner.find('#')]
+        for line in f:
+            if line.startswith('owner'):
+                _,_,owner = line.partition('=')
+                
+                if '#' in owner:
+                    owner = owner[:owner.find('#')]
 
-                    province.owner = owner.strip()
-                elif line.startswith('controller'):
-                    _,_,controller = line.partition('=')
+                province.owner = owner.strip()
+            elif line.startswith('controller'):
+                _,_,controller = line.partition('=')
 
-                    if '#' in controller:
-                        controller = controller[:controller.find('#')]
+                if '#' in controller:
+                    controller = controller[:controller.find('#')]
 
-                    province.controller = controller.strip()
+                province.controller = controller.strip()
 
 
 def lazy_atoi(s):

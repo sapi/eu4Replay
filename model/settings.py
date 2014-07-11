@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 
+from mod import Mod
 from namespaces import Namespace
 
 # The parsing here takes place at module level.
@@ -59,6 +60,12 @@ if len(_d['month_names']) != 12:
 
 # convert gif_settings to a Namespace
 _d['gif_settings'] = Namespace(**_d['gif_settings'])
+
+# actually create a Mod object
+_d['mods']['mod'] = Mod(_d['mods']['mod_name'], _d['mods']['mods_directory'])
+
+# convert mods to a Namespace
+_d['mods'] = Namespace(**_d['mods'])
 
 # Now, we import the settings to module scope
 globals().update(_d)

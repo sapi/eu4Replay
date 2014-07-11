@@ -2,15 +2,16 @@
 # All Rights Reserved
 
 import os
-from scipy.ndimage import imread
+from matplotlib.pyplot import imread
 from StringIO import StringIO
 import sys
 
+import model.settings as settings
 from parsers.countries import parse_countries
 from parsers.provinces \
         import parse_province_definitions, parse_province_regions, \
                parse_province_original_owners
-from parsers.files import parse_object
+from parsers.files import parse_file
 
 
 def flushed_write(s):
@@ -18,39 +19,31 @@ def flushed_write(s):
     sys.stdout.flush()
 
 
-def setup_data(eu4Dir):
-    # required directories / files
-    mapDir = os.path.join(eu4Dir, 'map')
-    provinceDefintionsFilename = os.path.join(mapDir, 'definition.csv')
-    mapFile = os.path.join(mapDir, 'provinces.bmp')
-    mapMetadataFilename = os.path.join(mapDir, 'default.map')
-
-    historyDir = os.path.join(eu4Dir, 'history')
-
+def setup_data():
     # load country data
     flushed_write('Loading country data...')
-    countries = parse_countries(eu4Dir)
+    countries = parse_countries()
     flushed_write('done!\n')
 
     # load province data
     flushed_write('Loading province definitions...')
-    provinces = parse_province_definitions(provinceDefintionsFilename)
+    provinces = parse_province_definitions()
     flushed_write('done!\n')
 
     flushed_write('Loading province owners...')
-    parse_province_original_owners(historyDir, provinces)
+    parse_province_original_owners(provinces)
     flushed_write('done!\n')
 
     # load map
     flushed_write('Loading map file...')
-    img = imread(mapFile)
+    img = imread(settings.mods.mod.mapImageFile)
     flushed_write('done!\n')
 
     # load map metadata
     flushed_write('Loading map metadata...')
 
-    with open(mapMetadataFilename, 'rU') as f:
-        mapObject = parse_object(StringIO(f.read()))
+    with settings.mods.mod.mapSettingsFile as f:
+        mapObject = parse_file(f)
 
     flushed_write('done!\n')
 
@@ -62,31 +55,23 @@ def setup_data(eu4Dir):
     return countries, provinces, img, mapObject
 
 
-def setup_map(eu4Dir):
-    mapDir = os.path.join(eu4Dir, 'map')
-    mapFilename = os.path.join(mapDir, 'provinces.bmp')
-    mapMetadataFilename = os.path.join(mapDir, 'default.map')
+def setup_map():
+    img = imread(settings.mods.mod.mapImageFile)
 
-    img = imread(mapFilename)
-
-    with open(mapMetadataFilename, 'rU') as f:
-        mapObject = parse_object(StringIO(f.read()))
+    with settings.mods.mod.mapSettingsFile as f:
+        mapObject = parse_file(f)
 
     return img, mapObject
 
 
-def setup_countries(eu4Dir):
-    countries = parse_countries(eu4Dir)
+def setup_countries():
+    countries = parse_countries()
     return countries
 
 
-def setup_provinces(eu4Dir):
-    mapDir = os.path.join(eu4Dir, 'map')
-    provinceDefintionsFilename = os.path.join(mapDir, 'definition.csv')
-    mapFilename = os.path.join(mapDir, 'provinces.bmp')
-
-    provinces = parse_province_definitions(provinceDefintionsFilename)
-    img = imread(mapFilename)
+def setup_provinces():
+    provinces = parse_province_definitions()
+    img = imread(settings.mods.mod.mapImageFile)
     parse_province_regions(img, provinces)
 
     return provinces

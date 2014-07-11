@@ -199,8 +199,8 @@ class frmEU4Viewer(wx.Frame):
 
         #### Instance Variables
         ## Quick-to-load properties
-        self.img, self.mapObject = setup_map(settings.eu4_directory)        
-        self.countries = setup_countries(settings.eu4_directory)
+        self.img, self.mapObject = setup_map()
+        self.countries = setup_countries()
 
         ## Properties which require user intervention
         self.provinces = None
@@ -266,7 +266,7 @@ class frmEU4Viewer(wx.Frame):
                 'Finding original province owners...')
 
         historyDir = os.path.join(settings.eu4_directory, 'history')
-        parse_province_original_owners(historyDir, self.provinces)
+        parse_province_original_owners(self.provinces)
 
         periodicThread.stop()
         wx.CallAfter(self.dlgProgress.Destroy)
@@ -303,7 +303,7 @@ class frmEU4Viewer(wx.Frame):
 
         # generate the provinces data
         # this will take a long time
-        self.provinces = setup_provinces(settings.eu4_directory)
+        self.provinces = setup_provinces()
 
         # save the file to disk
         wx.CallAfter(self.dlgProgress.UpdatePulse, 'Writing file...')
@@ -314,7 +314,7 @@ class frmEU4Viewer(wx.Frame):
                 'Finding original province owners...')
 
         historyDir = os.path.join(settings.eu4_directory, 'history')
-        parse_province_original_owners(historyDir, self.provinces)
+        parse_province_original_owners(self.provinces)
 
         periodicThread.stop()
         wx.CallAfter(self.dlgProgress.Destroy)
@@ -350,7 +350,8 @@ class frmEU4Viewer(wx.Frame):
         periodicThread.start()
 
         # load the save
-        self.save = parse_save(path)
+        with open(path, 'rU') as f:
+            self.save = parse_file(f, header=True)
 
         # parse the save for province histories
         wx.CallAfter(self.dlgProgress.UpdatePulse,

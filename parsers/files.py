@@ -283,24 +283,25 @@ def wrap_stream(f):
     return StringIO(f.read())
     
 
-def parse_file(fn, topLevelKeys=None):
-    with open(fn, 'rU') as f:
-        if topLevelKeys is None:
+def parse_file(f, topLevelKeys=None, header=False):
+    if topLevelKeys is None:
+        if header:
             f.readline() # consume header
-            stream = wrap_stream(f)
-            return parse_object(stream)
 
-        d = {}
+        stream = wrap_stream(f)
+        return parse_object(stream)
 
-        while 1:
-            line = f.readline()
+    d = {}
 
-            for k in topLevelKeys:
-                if line.startswith(k):
-                    stream = wrap_stream(f)
-                    d[k] = parse_object(stream)
+    while 1:
+        line = f.readline()
 
-                    if len(d) == len(topLevelKeys):
-                        break
+        for k in topLevelKeys:
+            if line.startswith(k):
+                stream = wrap_stream(f)
+                d[k] = parse_object(stream)
 
-        return d
+                if len(d) == len(topLevelKeys):
+                    break
+
+    return d
