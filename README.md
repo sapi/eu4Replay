@@ -68,6 +68,8 @@ Set `mod_name` to the name of your mod.  This should be the name of the mod file
 
 Both compressed and uncompressed mods are supported.  However, you will get much better performance with an uncompressed mod.
 
+If your mod starts at a different date to vanilla EU4, you will need to alter `start_date` (and similarly with `end_date`).
+
 ### Start and End Dates
 
 Enter `start_date` and `end_date` in `yyyy.mm.dd` format.
