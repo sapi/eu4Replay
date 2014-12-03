@@ -83,12 +83,14 @@ def build_history(save, provinces):
     # day, to save searching later
     provinceDates = {
             pID: set(evts) for pID,evts in provinceHistories.iteritems()
+                if evts
         }
 
     datesWithProvinceEvents = reduce(set.union, provinceDates.values())
 
     countryDates = {
             tag: set(evts) for tag,evts in countryHistories.iteritems()
+                if evts
         }
 
     datesWithCountryEvents = reduce(set.union, countryDates.values())
