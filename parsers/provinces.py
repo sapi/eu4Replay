@@ -13,7 +13,11 @@ def parse_province_definitions():
 
     with settings.mods.mod.provinceDefinitionFile as f:
         for line in f:
-            pID,r,g,b,name,_ = line.strip().split(';')
+            # workarounds for formatting errors in 1.8.1
+            try:
+                pID,r,g,b,name,_ = line.strip().split(';')
+            except ValueError:
+                pID,r,g,b,name,_ = filter(None, line.strip().split(';'))
 
             # skip the header line
             if not pID.isdigit():
