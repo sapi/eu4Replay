@@ -3,7 +3,7 @@
 
 import os
 from matplotlib.pyplot import imread
-from StringIO import StringIO
+from cStringIO import StringIO
 import sys
 
 import model.settings as settings

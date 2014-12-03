@@ -2,7 +2,7 @@
 # All Rights Reserved
 
 from datetime import datetime
-from StringIO import StringIO
+from cStringIO import StringIO
 
 ## Save Format
 # 
