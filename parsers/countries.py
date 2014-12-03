@@ -63,16 +63,15 @@ def create_dynamic_countries(save, countries):
             masters[subject] = master
 
     # now actually create the country objects
-    assert 'dynamic_countries' in save
+    if 'dynamic_countries' in save:
+        for tag in save['dynamic_countries']:
+            if tag not in countries:
+                countries[tag] = Country(tag)
 
-    for tag in save['dynamic_countries']:
-        if tag not in countries:
-            countries[tag] = Country(tag)
+            country = countries[tag]
 
-        country = countries[tag]
-
-        if tag in masters:
-            master = countries[masters[tag]]
-            country.col = master.col
-        else:
-            country.col = [0, 0, 0]
+            if tag in masters:
+                master = countries[masters[tag]]
+                country.col = master.col
+            else:
+                country.col = [0, 0, 0]
