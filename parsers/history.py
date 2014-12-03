@@ -86,14 +86,14 @@ def build_history(save, provinces):
                 if evts
         }
 
-    datesWithProvinceEvents = reduce(set.union, provinceDates.values())
+    datesWithProvinceEvents = reduce(set.union, provinceDates.values(), set())
 
     countryDates = {
             tag: set(evts) for tag,evts in countryHistories.iteritems()
                 if evts
         }
 
-    datesWithCountryEvents = reduce(set.union, countryDates.values())
+    datesWithCountryEvents = reduce(set.union, countryDates.values(), set())
 
     dates = datesWithProvinceEvents.union(datesWithCountryEvents)
 
