@@ -40,7 +40,13 @@ def build_history(save, provinces):
             continue
 
         for date,evt in d['history'].iteritems():
+            # we're interested in date events for province histories
             if not isinstance(date, datetime):
+                continue
+
+            # the save file isn't clean at all, and sometimes there are
+            # bad keys, eg yyyy.m.d={}
+            if evt is None:
                 continue
 
             out = {}
